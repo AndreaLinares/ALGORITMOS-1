@@ -1,0 +1,1728 @@
+#include "stdafx.h"
+#include <conio.h>
+#include "stdio.h"
+#include <iostream>
+
+using namespace std; 
+struct proyecto
+{
+	int idproyecto;
+	char nombre[30];
+	char estado;
+};
+struct inversionista 
+{
+	int idinversionista; 
+	char nombre[30];
+	char telefono[12];
+	char email[50];
+	char ci[10];
+	char estado;
+};
+struct inversion
+{
+	int idinversion;
+	float monto;
+	char fecha[11];
+	int idproyecto;
+	int idinversionista;
+	char estado; 
+}; 
+struct egreso
+{
+	int idegreso;
+	char fecha[11];
+	float monto;
+	char descripcion[30];
+	int idproyecto; 
+	char estado;
+};
+
+
+void eliminar_inversion(char nombArch[20],int idinversion);
+void eliminar_puntodeegreso(char nombArch[20],int idptv);
+void eliminar_egreso(char nombArch[20],int idegreso);
+void eliminar_egresos_por_inversionista(char nomArch[20],int idinversionista);
+
+//void crear_proyecto(char nomArch[20])
+//{
+//	proyecto reg;
+//	FILE *ptr;
+//	ptr=fopen(nomArch,"w+");
+//	fclose(ptr);
+//}
+//
+//void crear_inversion(char nomArch[20])
+//{
+//	inversion reg;
+//	FILE *ptr;
+//	ptr=fopen(nomArch,"w+");
+//	fclose(ptr);
+//}
+//void crear_inversionista( char nomArch[20])
+//{
+//	inversionista reg;
+//	FILE *ptr; 
+//	ptr = fopen(nomArch,"w+");
+//	fclose(ptr);
+//}
+//void crear_egreso(char nomArch[20])
+//{
+//	egreso reg; 
+//	FILE *ptr;
+//	ptr = fopen(nomArch,"w+");
+//	fclose(ptr);
+//
+//}
+bool validar_fecha(int dia,int mes,int anho)
+{
+	if(mes>12||mes<0||//mes entre 0 y 12
+		dia>31||dia<0||//dia entre 0 y 31
+		(dia>30 && mes>7 && mes%2 == 1)||//dia menor a 30 para meses menores a julio
+		(dia>30 && mes<7 && (mes%2 == 0))||//dia menor a 30 para meses mayores a julio
+		(dia>29 && mes==2 && ((anho%4 == 0) || ((anho%100 > 0) && (anho%400 == 0)) ) ) ||//si es bisiesto, dia menor a 29 para febrero
+		(dia>28 && mes==2 && (anho%4 >0) || ( (anho%100 == 0) && (anho%400 > 0)) ) )
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+int char_a_int(char c)
+{
+	return (int)(c-'0');
+}
+
+bool fechacorrecta(char fecha[11])
+{
+	fecha[10]='\0';
+	bool correcto = true;
+	int dia = char_a_int(fecha[0])*10 + char_a_int(fecha[1]);
+	int mes = char_a_int(fecha[3])*10 + char_a_int(fecha[4]);
+	int anho = char_a_int(fecha[6])*1000 + char_a_int(fecha[7])*100 + char_a_int(fecha[8])*10 + char_a_int(fecha[9]);
+	correcto = validar_fecha(dia,mes,anho);
+	return correcto;
+}
+bool existe_inversion(char nomArch[20], int idinversion)
+{
+	inversion reg;
+	FILE *ptr;
+	bool encontro=false;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+	}
+	else
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversion==reg.idinversion) && (reg.estado=='N'))
+			{ encontro=true;
+			}
+			else 
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		fclose(ptr);
+	}
+	return(encontro);
+
+}
+
+bool existe_inversionista( char nomArch[20], int idinversionista)
+{
+	inversionista reg; 
+	FILE *ptr; 
+	bool encontro = false; 
+	ptr= fopen(nomArch,"r");
+	if(ptr ==NULL)
+	{
+	}
+	else
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversionista == reg.idinversionista) && (reg.estado == 'N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		fclose(ptr);
+	}
+	return(encontro); 
+}
+bool existe_egreso( char nomArch[20], int idegreso)
+{
+	egreso reg; 
+	FILE *ptr; 
+	bool encontro = false; 
+	ptr= fopen(nomArch,"r");
+	if(ptr ==NULL)
+	{
+	}
+	else
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idegreso == reg.idegreso) && (reg.estado == 'N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		fclose(ptr);
+	}
+	return(encontro); 
+}
+bool existe_proyecto( char nomArch[20], int idproyecto)
+{
+	proyecto reg; 
+	FILE *ptr; 
+	bool encontro = false; 
+	ptr= fopen(nomArch,"r");
+	if(ptr ==NULL)
+	{
+	}
+	else
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idproyecto == reg.idproyecto) && (reg.estado == 'N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		fclose(ptr);
+	}
+	return(encontro); 
+}
+void eliminar_egreso_por_proyecto(char nomArch[20],int idproyecto)
+{
+	egreso reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r+");
+	int i = 0;
+	if(ptr==NULL)
+	{
+	}
+	else 
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N' && reg.idproyecto == idproyecto )
+			{
+				eliminar_egreso("egreso.dat",reg.idegreso);
+			}
+			fread(&reg,sizeof(struct egreso),1,ptr);
+			i++;
+		}
+		fclose(ptr);
+	} 
+}
+
+void eliminar_inversion_por_proyecto(char nomArch[20],int idproyecto)
+{
+	inversion reg; 
+	FILE *ptr;
+	ptr=fopen(nomArch,"r+");
+	int i = 0;
+	if(ptr==NULL)
+	{
+	}
+	else 
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N' && reg.idproyecto == idproyecto )
+			{
+				eliminar_inversion("inversion.dat",reg.idinversion);
+			}
+			fread(&reg,sizeof(struct inversion),1,ptr);
+			i++;
+		}
+		fclose(ptr);
+	} 
+}
+void eliminar_inversion_por_inversionista(char nomArch[20],int idinversionista)
+{
+	inversion reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r+");
+	int i = 0;
+	if(ptr==NULL)
+	{
+	}
+	else 
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N' && reg.idinversionista == idinversionista )
+			{
+				eliminar_inversion("inversion.dat",reg.idinversion);
+			}
+			fread(&reg,sizeof(struct inversion),1,ptr);
+			i++;
+		}
+		fclose(ptr);
+	} 
+}
+
+void adicionar_proyecto(char nomArch[20])
+{
+	proyecto reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"a");
+	if(ptr==NULL)
+	{
+		cout<<"no existe el archivo";
+	}
+	else
+	{ 
+		do{
+			reg.idproyecto=-1;
+			cout<<endl<<"introducir codigo de proyecto:";
+			cin>>reg.idproyecto;
+			cin.ignore();
+			if(reg.idproyecto==-1)
+			{
+				cin.clear();
+				cin.ignore();
+			}
+			if(existe_proyecto(nomArch,reg.idproyecto))
+			{
+				cout<<"ya existe el codigo"<<endl;
+				reg.idproyecto = -1;
+			}
+		}while(reg.idproyecto==-1);
+		cout<<endl<<"introducir nombre del proyecto";
+		gets(reg.nombre);
+		reg.estado='N';
+		fwrite(&reg,sizeof(struct proyecto),1,ptr);
+	}
+	fclose(ptr);
+}
+void listar_proyecto(char nomArch[20])
+{
+	proyecto reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE PROYECTOS **";
+		cout<<endl<<" idproyecto  nombre";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct proyecto),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N')
+			{
+				cout<<endl<<reg.idproyecto<<"          "<<reg.nombre;					
+			}
+			fread(&reg,sizeof(struct proyecto),1,ptr);
+		}
+	} 
+	fclose(ptr);
+}
+void buscar_proyecto(char nomArch[20], int idproyecto)
+{
+	proyecto reg;
+	FILE *ptr;
+	bool encontro;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"archivo no existente"; 
+	}
+	else 
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idproyecto == reg.idproyecto) &&(reg.estado=='N') )
+			{
+				cout<<endl<<reg.idproyecto<<"          "<<reg.nombre;
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(!encontro)
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+void eliminar_proyecto(char nombArch[20],int idproyecto)
+{
+	proyecto reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nombArch,"r+");	
+	if(ptr == NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idproyecto == reg.idproyecto) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			reg.estado='S';
+			fwrite(&reg,sizeof(reg),1,ptr);
+			fclose(ptr);
+			eliminar_egreso_por_proyecto("egreso.dat",reg.idproyecto);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+			fclose(ptr);
+		}
+	}
+}
+void modificar_proyecto(char nomArch[20],int idproyecto)
+{
+	proyecto reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nomArch,"r+");
+	if(ptr == NULL)
+	{
+		cout<<"no se pudo abrir el archivo";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idproyecto == reg.idproyecto) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			cout<<endl<<"introduzca el nombre del proyecto: ";
+			gets(reg.nombre);
+			fwrite(&reg,sizeof(reg),1,ptr);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+void adicionar_inversionista(char nomArch [20])
+{
+	inversionista reg; 
+	FILE *ptr;
+	ptr= fopen(nomArch,"a"); 
+	if(ptr==NULL)
+	{
+		cout<<endl<<" no exite el archivo"; 
+	}
+	else 
+	{ do{
+		reg.idinversionista = -1;
+		cout<<endl<<" introducir codigo de inversionista: "; 
+		cin>> reg.idinversionista;
+		cin.ignore();
+		if(reg.idinversionista == -1)
+		{
+			cin.clear();
+			cin.ignore ();
+		}
+		if(existe_inversionista(nomArch,reg.idinversionista))
+		{
+			cout<<"ya existe el codigo"<<endl;
+			reg.idinversionista = -1;
+		}
+	} while(reg.idinversionista == -1 );
+	cout<<endl<<"introducir nombre: "; 
+	gets(reg.nombre);
+	cout<<endl<<" introducir telefono: ";
+	gets(reg.telefono);
+	cout<<endl<<" introducir email: "; 
+	gets(reg.email);
+	cout<<endl<<"introcir ci: "; 
+	gets(reg.ci);
+	reg.estado = 'N';
+	fwrite(&reg,sizeof(struct inversionista),1,ptr);
+	}
+	fclose(ptr);
+}
+
+void listar_inversionista(char nomArch[20])
+{
+	inversionista reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE INVERSIONISTAS **";
+		cout<<endl<<" idinversionista  nombre  telefono  email  ci  ";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct inversionista),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N'){
+				cout<<endl<<reg.idinversionista<<"          "<<reg.nombre<<"            "<<reg.telefono<<"          "<<reg.email<<"          "<<reg.ci;}
+			fread(&reg,sizeof(struct inversionista),1,ptr);
+		}
+	} 
+	fclose(ptr);
+}
+void buscar_inversionista(char nomArch[20], int idinversionista)
+{
+	inversionista reg;
+	FILE *ptr;
+	bool encontro;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"archivo no existente"; 
+	}
+	else 
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversionista == reg.idinversionista) &&(reg.estado=='N') )
+			{
+				cout<<endl<<reg.nombre<<"            "<<reg.telefono<<"          "<<reg.email<<"          "<<reg.ci;
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(!encontro)
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+void eliminar_inversionista(char nombArch[20],int idinversionista)
+{
+	inversionista reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nombArch,"r+");	
+	if(ptr == NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversionista == reg.idinversionista) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			reg.estado='S';
+			fwrite(&reg,sizeof(reg),1,ptr);
+			fclose(ptr);
+			eliminar_inversion_por_inversionista("egreso.dat",reg.idinversionista);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+			fclose(ptr);
+		}
+	}
+}
+void modificar_inversionista(char nomArch[20],int idinversionista)
+{
+	inversionista reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nomArch,"r+");
+	if(ptr == NULL)
+	{
+		cout<<"no se pudo abrir el archivo";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversionista == reg.idinversionista) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			cout<<endl<<"introduzca el nombre del inversionista: ";
+			gets(reg.nombre);
+			cout<<endl<<"introduzca telefono: ";
+			gets(reg.telefono);
+			cout<<endl<<"introduzca email: ";
+			gets(reg.email);
+			cout<<endl<<"introduzca ci: ";
+			gets(reg.ci);
+			fwrite(&reg,sizeof(reg),1,ptr);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+
+void adicionar_inversion( char nomArch[20])
+{
+	inversion reg;
+	FILE *ptr;
+	ptr = fopen(nomArch,"a");
+	if(ptr==NULL)
+	{
+		cout<<"no existe el archivo";
+	}
+	else
+	{
+		do{
+			reg.idinversion = -1;
+			cout<<endl<<"introducir el codigo de inversion: ";
+			cin>>reg.idinversion;
+			if(reg.idinversion == -1)
+			{
+				cin.clear();
+				cin.ignore();
+			}
+			if(existe_inversion(nomArch,reg.idinversion))
+			{
+				cout<<"ya existe el codigo"<<endl;
+				reg.idinversion = -1;
+			}
+		} while(reg.idinversion == -1); 
+		cout<<endl<<"introducir monto: "; 
+		cin>> reg.monto;	
+		do
+			{
+				cout<<endl<<"introduzca la fecha: ";
+				cout<<endl<<"formato dd/mm/aaaa"<<endl;
+				cin>>reg.fecha;
+			}while(!fechacorrecta(reg.fecha));
+		do{
+			reg.idproyecto = -1; 
+			cout<<endl<<" introducir codigo de proyecto: ";
+			cin>> reg.idproyecto; 
+			if( reg.idproyecto == -1)
+			{
+				cin.clear(); 
+				cin.ignore (); 
+			}
+		} while(reg.idproyecto == -1);
+		if( !existe_proyecto("proyecto.dat",reg.idproyecto))
+		{
+			cout<<endl<<" no existe el codigo del  proyecto"; 
+			return;
+		}
+		do{
+			reg.idinversionista = -1; 
+			cout<<endl<<" introducir codigo de inversionista: ";
+			cin>> reg.idinversionista; 
+			if( reg.idinversionista == -1)
+			{
+				cin.clear(); 
+				cin.ignore (); 
+			}
+		} while(reg.idinversionista == -1);
+		if( !existe_inversionista("inversionista.dat",reg.idinversionista))
+		{
+			cout<<endl<<" no existe el codigo del  inversionista"; 
+			return;
+		}
+		reg.estado= 'N';
+		fwrite(&reg,sizeof( struct inversion),1,ptr);
+	}
+	fclose(ptr);
+}
+void listar_inversion(char nomArch[20])
+{
+	inversion reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE INVERSIONES **";
+		cout<<endl<<" idinversion  monto  fecha  idproyecto   idinversionista ";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct inversion),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N')
+			{
+				cout<<endl<<reg.idinversion<<"          "<<reg.monto<<"            "<<reg.fecha<<"          "<<reg.idproyecto<<"          "<<reg.idinversionista;
+			}
+			fread(&reg,sizeof(struct inversion),1,ptr);
+		}
+	} 
+	fclose(ptr);
+}
+void buscar_inversion(char nomArch[20], int idinversion)
+{
+	inversion reg;
+	FILE *ptr;
+	bool encontro;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"archivo no existente"; 
+	}
+	else 
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversion == reg.idinversion) &&(reg.estado=='N') )
+			{
+				cout<<endl<<"          "<<reg.monto<<"            "<<reg.fecha<<"          "<<reg.idproyecto<<"          "<<reg.idinversionista;
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(!encontro)
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+void eliminar_inversion(char nombArch[20],int idinversion)
+{
+	inversion reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nombArch,"r+");	
+	if(ptr == NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversion == reg.idinversion) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			reg.estado='S';
+			fwrite(&reg,sizeof(reg),1,ptr);
+			fclose(ptr);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+			fclose(ptr);
+		}
+	}
+}
+void modificar_inversion(char nomArch[20],int idinversion)
+{
+	inversion reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nomArch,"r+");
+	if(ptr == NULL)
+	{
+		cout<<"no se pudo abrir el archivo";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idinversion == reg.idinversion) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			cout<<endl<<"introducir monto: "; 
+			cin>> reg.monto;
+			do
+			{
+				cout<<endl<<"introduzca la fecha: ";
+				cout<<endl<<"formato dd/mm/aaaa"<<endl;
+				cin>>reg.fecha;
+			}while(!fechacorrecta(reg.fecha));
+			cout<<endl<<"introducir idproyecto: ";
+			cin>> reg.idproyecto;
+			cout<<endl<<"introducir idinversionista: ";
+			cin>> reg.idinversionista;
+			fwrite(&reg,sizeof(reg),1,ptr);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+
+
+void adicionar_egreso(char nomArch [20])
+{
+	egreso reg;
+	FILE *ptr; 
+	ptr= fopen(nomArch,"a");
+	if(ptr==NULL)
+	{
+		cout<<endl<<" no exite el archivo"; 
+	}
+	else 
+	{
+		do{
+			reg.idegreso= -1;
+			cout<<endl<<" introducir codigo de egreso: "; 
+			cin>> reg.idegreso;
+			if(reg.idegreso == -1)
+			{
+				cin.clear();
+				cin.ignore ();
+			}
+			if(existe_egreso(nomArch,reg.idegreso))
+			{
+				cout<<"ya existe el codigo"<<endl;
+				reg.idegreso = -1;
+			}
+		} while(reg.idegreso == -1);
+		do
+		{
+			cout<<endl<<"introduzca la fecha: ";
+			cout<<endl<<"formato dd/mm/aaaa"<<endl;
+			cin>>reg.fecha;
+		}while(!fechacorrecta(reg.fecha));
+		do{
+			reg.idproyecto = -1; 
+			cout<<endl<<" introducir codigo de proyecto: ";
+			cin>> reg.idproyecto; 
+			if( reg.idproyecto == -1)
+			{
+				cin.clear(); 
+				cin.ignore (); 
+			}
+		} while(reg.idproyecto == -1);
+		if( !existe_proyecto("proyecto.dat",reg.idproyecto))
+		{
+			cout<<endl<<" no existe el codigo del  proyecto"; 
+			return;
+		}
+		cout<<endl<<"introducir descripcion: "; 
+		gets(reg.descripcion);
+		cout<<endl<<" introcir monto: ";
+		cin>> reg.monto;
+		reg.estado= 'N'; 
+		fwrite(&reg,sizeof(struct egreso),1,ptr); 
+	}
+	fclose(ptr);
+}
+void listar_egreso(char nomArch[20])
+{
+	egreso reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE EGRESOS **";
+		cout<<endl<<" IdEgreso  fecha  monto  descripcion  IdProyecto";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct egreso),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N')
+			{
+				cout<<endl<<reg.idegreso<<"          "<<reg.fecha<<"            "<<reg.monto<<"       "<<reg.descripcion<<"       "<<reg.idproyecto;
+			}
+			fread(&reg,sizeof(struct egreso),1,ptr);
+		}
+	} 
+	fclose(ptr);
+}
+void buscar_egreso(char nomArch[20], int idegreso)
+{
+	egreso reg;
+	FILE *ptr;
+	bool encontro;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"archivo no existente"; 
+	}
+	else 
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idegreso == reg.idegreso) &&(reg.estado=='N') )
+			{
+				cout<<endl<<reg.fecha<<"            "<<reg.monto<<"       "<<reg.descripcion<<"       "<<reg.idproyecto;
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(!encontro)
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+void eliminar_egreso(char nombArch[20],int idegreso)
+{
+	egreso reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nombArch,"r+");	
+	if(ptr == NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idegreso == reg.idegreso) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			reg.estado='S';
+			fwrite(&reg,sizeof(reg),1,ptr);
+			fclose(ptr);
+			//eliminar_cajas_por_egreso("caja.dat",reg.cod_egreso);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+			fclose(ptr);
+		}
+	}
+}
+void modificar_egreso(char nomArch[20],int idegreso)
+{
+	egreso reg;
+	FILE *ptr;
+	bool encontro;
+	ptr = fopen(nomArch,"r+");
+	if(ptr == NULL)
+	{
+		cout<<"no se pudo abrir el archivo";
+	}
+	else
+	{
+		encontro = false;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr) && !encontro)
+		{
+			if((idegreso == reg.idegreso) && (reg.estado=='N'))
+			{
+				encontro = true;
+			}
+			else
+			{
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+		}
+		if(encontro)
+		{
+			fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+			do
+			{
+				cout<<endl<<"introduzca la fecha: ";
+				cout<<endl<<"formato dd/mm/aaaa"<<endl;
+				cin>>reg.fecha;
+			}while(!fechacorrecta(reg.fecha));
+			do{
+				reg.idproyecto = -1; 
+				cout<<endl<<" introducir codigo de proyecto: ";
+				cin>> reg.idproyecto; 
+				if( reg.idproyecto == -1)
+				{
+					cin.clear(); 
+					cin.ignore (); 
+				}
+			} while(reg.idproyecto == -1);
+			if( !existe_proyecto("proyecto.dat",reg.idproyecto))
+			{
+				cout<<endl<<" no existe el codigo del  proyecto"; 
+				return;
+			}
+			cout<<endl<<"introducir descripcion: "; 
+			gets(reg.descripcion);
+			cout<<endl<<" introcir monto: ";
+			cin>> reg.monto;
+			fwrite(&reg,sizeof(reg),1,ptr);
+		}
+		else
+		{
+			cout<<"no se encontro el codigo";
+		}
+		fclose(ptr);
+	}
+}
+bool esmenor(char fechaini[11], char fechafin[11])
+{
+	bool menor=false;
+	if(strcmp(fechaini+6,fechafin+6)==0)
+	{
+		if(strcmp(fechaini+3,fechafin+3)==0)
+		{
+			if(strcmp(fechaini,fechafin)<=0)
+			{
+				menor=true;
+			}
+		}
+		else 
+		{
+			if(strcmp(fechaini+3,fechafin+3)<0)
+			{
+				menor=true;
+			}
+		}
+	}
+	else 
+	{
+		if(strcmp(fechaini+6,fechafin+6)<0)
+		{
+			menor=true;
+		}
+	}
+	return menor;
+}
+bool fechaestaentreiniyfin(char fecha[11],char fechaini[11], char fechafin[11])
+{
+	if (esmenor(fechaini,fecha)&& esmenor(fecha,fechafin))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+float MostrarInversionesProyecto(char nomArch[20],int idproyecto,char fechaini[11], char fechafin[11])
+{
+	inversion reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	float total = 0;
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"	 idinversion  monto  fecha  idinversionista ";
+		fread(&reg,sizeof(struct inversion),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N' && fechaestaentreiniyfin(reg.fecha,fechaini,fechafin) && reg.idproyecto == idproyecto)
+			{
+				cout<<endl<<"		"<<reg.idinversion<<"          "<<reg.monto<<"            "<<reg.fecha<<"          "<<reg.idinversionista;
+				total = total + reg.monto;
+			}
+			fread(&reg,sizeof(struct inversion),1,ptr);
+		}
+		cout<<endl<<"subtotal proyecto:"<<total;
+	} 
+	fclose(ptr);
+	return total;
+}
+void ReporteInversionesPorProyecto(char nomArch[20],char fechaini[11], char fechafin[11])
+{
+	proyecto reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	float total = 0;
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE PROYECTOS **";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct proyecto),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N')
+			{
+				cout<<endl<<"id:"<<reg.idproyecto;
+				cout<<endl<<"nombre:"<<reg.nombre;
+				cout<<endl<<"inversiones:";
+				total = total + MostrarInversionesProyecto("inversion.dat",reg.idproyecto,fechaini,fechafin);
+				cout<<endl<<"--------------------";
+			}
+			fread(&reg,sizeof(struct proyecto),1,ptr);
+		}
+		cout<<endl<<"=============================";
+		cout<<endl<<"total ingresos:"<<total;
+	} 
+	fclose(ptr);
+}
+float MostrarEgresosProyecto(char nomArch[20],int idproyecto,char fechaini[11], char fechafin[11])
+{
+	egreso reg;
+	FILE *ptr;
+	float total = 0;
+	ptr=fopen(nomArch,"r");
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<" IdEgreso  fecha  monto";
+		fread(&reg,sizeof(struct egreso),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N' && fechaestaentreiniyfin(reg.fecha,fechaini,fechafin) && reg.idproyecto==idproyecto)
+			{
+				cout<<endl<<"	"<<reg.idegreso<<"          "<<reg.fecha<<"            "<<reg.monto;
+				total = total + reg.monto;
+			}
+			fread(&reg,sizeof(struct egreso),1,ptr);
+		}
+		cout<<endl<<"subtotal proyecto:"<<total;
+	} 
+	fclose(ptr);
+	return total;
+}
+void ReporteEgresosPorProyecto(char nomArch[20],char fechaini[11], char fechafin[11])
+{
+	proyecto reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	float total=0;
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE PROYECTOS **";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct proyecto),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N')
+			{
+				cout<<endl<<"id:"<<reg.idproyecto;
+				cout<<endl<<"nombre:"<<reg.nombre;
+				cout<<endl<<"egresos:";
+				total = total + MostrarEgresosProyecto("egreso.dat",reg.idproyecto,fechaini,fechafin);
+				cout<<endl<<"--------------------";
+			}
+			fread(&reg,sizeof(struct proyecto),1,ptr);
+		}
+		cout<<endl<<"=============================";
+		cout<<endl<<"total egresos:"<<total;
+	} 
+	fclose(ptr);
+}
+
+float MostrarInversiones(char nomArch[20],int idinversionista)
+{
+	inversion reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	float total=0;
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct inversion),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N' && reg.idinversionista == idinversionista)
+			{
+				cout<<endl<<reg.idinversion<<"          "<<reg.monto<<"            "<<reg.fecha<<"          "<<reg.idproyecto;
+				total = total + reg.monto;
+			}
+			fread(&reg,sizeof(struct inversion),1,ptr);
+		}
+		cout<<endl<<"total invertido:"<<total;
+	} 
+	fclose(ptr);
+	return total;
+}
+
+void ReporteGananciaInversionistas(char nomArch[20])
+{
+	inversionista reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	float total = 0;
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE GANANCIAS **";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct inversionista),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N')
+			{
+				cout<<endl<<"id:"<<reg.idinversionista<<endl<<"nombre:"<<reg.nombre;
+				total = total + MostrarInversiones("inversion.dat",reg.idinversionista);
+			}
+			fread(&reg,sizeof(struct inversionista),1,ptr);
+		}
+		cout<<endl<<"total inversiones:"<<total;
+	} 
+	fclose(ptr);
+}
+
+void ReporteIMPUESTOS(char nomArch[20],char fechaini[11], char fechafin[11])
+{
+	proyecto reg;
+	FILE *ptr;
+	ptr=fopen(nomArch,"r");
+	float total=0;
+	if(ptr==NULL)
+	{
+		cout<<"el archivo no existe";
+	}
+	else 
+	{
+		cout<<endl<<"** LISTADO DE IMPUESTOS POR PROYECTOS **";
+		cout<<endl<<"=============================";
+		fread(&reg,sizeof(struct proyecto),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.estado=='N')
+			{
+				cout<<endl<<"id:"<<reg.idproyecto;
+				cout<<endl<<"nombre:"<<reg.nombre;
+				total = total +MostrarInversionesProyecto("inversion.dat",reg.idproyecto,fechaini,fechafin) - MostrarEgresosProyecto("egreso.dat",reg.idproyecto,fechaini,fechafin);
+				cout<<endl<<endl<<"Total iva: "<<total*0.13;
+				cout<<endl<<"Total IUE: "<<total*0.03;
+				cout<<endl<<"--------------------";
+				total=0;
+			}
+			fread(&reg,sizeof(struct proyecto),1,ptr);
+		}
+		cout<<endl<<"=============================";
+		
+	} 
+	fclose(ptr);
+}
+
+
+int main()
+{
+	int op;
+	int op2;
+	int codigo;
+	int codigo_inversionista; 
+	int codigo_egreso;
+	int codigo_inversion;
+	char fechaini[11];
+	char fechafin[11];
+	cout<<endl<<"-----------------------------------------------------------------------------";
+	cout<<endl<<endl<<" ***********PROYECTO FINAL DE ALGORTMOS Y PROGRAMACION I ***************";
+	cout<<endl<<"-----------------------------------------------------------------------------";
+	cout<<endl<<endl<<"INTEGRANTES:  ";
+	cout<<endl<<" ANDREA LINARES RIVAS ";
+		cout<<endl<<" KATHERINE CALLAO MENDEZ";
+			cout<<endl<<" BELEN MENACHO ANTELO ";
+				cout<<endl<<" NATHALY TERCEROS ARAMAYO ";
+				cout<<endl<<"-----------------------------------------------------------------------------";
+	do{
+		cout<<endl<<"1.- Proyecto";
+		cout<<endl<<"2.- Inversionista";
+		cout<<endl<<"3.- Inversion";
+		cout<<endl<<"4.- Egreso";
+		cout<<endl<<"5.- Reporte total de inversiones en un determinado periodo";
+		cout<<endl<<"6.- Reporte total de egresos en un determinado periodo";
+		cout<<endl<<"7.- Reporte ganancias";
+		cout<<endl<<"8.- Reporte de IMPUESTOS";
+		cout<<endl<<"0.- Salir";
+		cout<<endl<<"digite su opcion:";
+		cin>>op;
+		cin.ignore();
+		system("cls");
+		switch (op)
+		{
+		case 1:
+			{
+				cout<<"Proyecto"<<endl;
+				cout<<endl<<"MENU DE OPCIONES";
+				cout<<endl<<"1.- adicionar proyecto ";
+				cout<<endl<<"2.- listar proyecto";
+				cout<<endl<<"3.- buscar proyecto";
+				cout<<endl<<"4.- eliminar proyecto";
+				cout<<endl<<"5.-modificar proyecto";
+				cout<<endl<<"6.- salir";
+				cout<<endl<< "elija la opcion: ";
+				cin>>op2;
+				cin.ignore();
+				system("cls");
+				switch(op2)
+				{
+				case 1:
+					{
+						adicionar_proyecto("proyecto.dat");
+						break;
+					}
+				case 2:
+					{
+						listar_proyecto("proyecto.dat");
+						break;
+					}
+				case 3:
+					{
+						do{
+							codigo = -1;
+							cout<<endl<<" introducir codigo de proyecto: ";
+							cin>>codigo;
+							cin.ignore();
+							if(codigo == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo == -1);
+						buscar_proyecto("proyecto.dat",codigo);
+						break;
+					}
+				case 4:
+					{
+						do{
+							codigo = -1;
+							cout<<endl<<" introducir codigo de proyecto: ";
+							cin>>codigo;
+							cin.ignore();
+							if(codigo == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo == -1);
+						eliminar_proyecto("proyecto.dat",codigo);
+						break;
+					}
+				case 5:
+					{
+						do{
+							codigo = -1;
+							cout<<endl<<" introducir codigo de proyecto: ";
+							cin>>codigo;
+							cin.ignore();
+							if(codigo == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo == -1);
+						modificar_proyecto("proyecto.dat",codigo);
+						break;
+					}
+				}
+				break;
+			}
+		case 2:
+			{
+				cout<<endl<<"Inversionista";
+				cout<<endl<<"MENU DE OPCIONES";
+				cout<<endl<<"1.- adicionar inversionista ";
+				cout<<endl<<"2.- listar inversionista";
+				cout<<endl<<"3.- buscar inversionista";
+				cout<<endl<<"4.- eliminar inversionista";
+				cout<<endl<<"5.-modificar inversionista";
+				cout<<endl<<"6.- salir";
+				cout<<endl<< "elija la opcion: ";
+				cin>>op2;
+				cin.ignore();
+				system("cls");
+				switch(op2)
+				{
+				case 1:
+					{
+						adicionar_inversionista("inversionista.dat");
+						break;
+					}
+				case 2:
+					{
+						listar_inversionista("inversionista.dat");
+						break;
+					}
+				case 3:
+					{
+						do{
+							codigo_inversionista = -1;
+							cout<<endl<<"introduzca el codigo de inversionista: ";
+							cin>>codigo_inversionista;
+							cin.ignore();
+							if(codigo_inversionista == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_inversionista == -1);
+						buscar_inversionista("inversionista.dat",codigo_inversionista);
+						break;
+					}
+				case 4:
+					{
+						do{
+							codigo_inversionista = -1;
+							cout<<endl<<"introduzca el codigo de inversionista: ";
+							cin>>codigo_inversionista;
+							cin.ignore();
+							if(codigo_inversionista == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_inversionista == -1);
+						eliminar_inversionista("inversionista.dat",codigo_inversionista);
+						break;
+					}
+				case 5:
+					{
+						do{
+							codigo_inversionista = -1;
+							cout<<endl<<"introduzca el codigo de inversionista: ";
+							cin>>codigo_inversionista;
+							cin.ignore();
+							if(codigo_inversionista == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_inversionista == -1);
+						modificar_inversionista("inversionista.dat",codigo_inversionista);
+						break;
+					}
+				}
+				break;
+			}
+		case 3:
+			{ 
+				cout<<endl<<"Inversion";
+				cout<<endl<<"MENU DE OPCIONES";
+				cout<<endl<<"1.- adicionar inversion";
+				cout<<endl<<"2.- listar inversion";
+				cout<<endl<<"3.- buscar inversion";
+				cout<<endl<<"4.- eliminar inversion";
+				cout<<endl<<"5.-modificar inversion";
+				cout<<endl<<"6.- salir";
+				cout<<endl<< "elija la opcion: ";
+				cin>>op2;
+				cin.ignore();
+				system("cls");
+				switch(op2)
+				{
+				case 1:
+					{
+						adicionar_inversion("inversion.dat");
+						break;
+					}
+				case 2:
+					{
+						listar_inversion("inversion.dat");
+						break;
+					}
+				case 3:
+					{
+						do{
+							codigo_inversion= -1;
+							cout<<endl<<"introduzca el codigo del inversion: ";
+							cin>>codigo_inversion;
+							cin.ignore();
+							if(codigo_inversion== -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_inversion== -1);
+						buscar_inversion("inversion.dat",codigo_inversion);
+						break;
+					}
+				case 4:
+					{
+						do{
+							codigo_inversion= -1;
+							cout<<endl<<"introduzca el codigo del inversion: ";
+							cin>>codigo_inversion;
+							cin.ignore();
+							if(codigo_inversion== -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_inversion== -1);
+						eliminar_inversion("inversion.dat",codigo_inversion);
+						break;
+					}
+				case 5:
+					{
+						do{
+							codigo_inversion= -1;
+							cout<<endl<<"introduzca el codigo del inversion: ";
+							cin>>codigo_inversion;
+							cin.ignore();
+							if(codigo_inversion== -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_inversion== -1);
+						modificar_inversion("inversion.dat",codigo_inversion);
+						break;
+					}
+				}
+				break;
+			}
+		case 4:
+			{
+				cout<<endl<<"punto de egreso";
+				cout<<endl<<"MENU DE OPCIONES";
+				cout<<endl<<"1.- adicionar egreso ";
+				cout<<endl<<"2.- listar egreso";
+				cout<<endl<<"3.- buscar egreso";
+				cout<<endl<<"4.- eliminar egreso";
+				cout<<endl<<"5.-modificar egreso";
+				cout<<endl<<"6.- salir";
+				cout<<endl<< "elija la opcion: ";
+				cin>>op2;
+				system("cls");
+				switch(op2)
+				{
+				case 1:
+					{
+						adicionar_egreso("egreso.dat");
+						break;
+					}
+				case 2:
+					{
+						listar_egreso("egreso.dat");
+						break;
+					}
+				case 3:
+					{
+						do{
+							codigo_egreso = -1;
+							cout<<endl<<"introduzca el codigo de egreso: ";
+							cin>>codigo_egreso;
+							cin.ignore();
+							if(codigo_egreso == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_egreso == -1);
+						buscar_egreso("egreso.dat",codigo_egreso);
+						break;
+					}
+				case 4:
+					{
+						do{
+							codigo_egreso = -1;
+							cout<<endl<<"introduzca el codigo de egreso: ";
+							cin>>codigo_egreso;
+							if(codigo_egreso == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_egreso == -1);
+						eliminar_egreso("egreso.dat",codigo_egreso);
+						break;
+					}
+				case 5:
+					{
+						do{
+							codigo_egreso = -1;
+							cout<<endl<<"introduzca el codigo de egreso: ";
+							cin>>codigo_egreso;
+							cin.ignore();
+							if(codigo_egreso == -1)
+							{
+								cin.clear();
+								cin.ignore();
+							}
+						}while(codigo_egreso == -1);
+						modificar_egreso("egreso.dat",codigo_egreso);
+						break;
+					}
+				}
+				break;
+			}
+		case 5:
+			{  
+				do
+				{ 
+					cout<<endl<<"ingresar fecha inicial:";
+					gets(fechaini);
+				}while(!fechacorrecta(fechaini));
+				do{
+					cout<<endl<<"ingresar fecha final";
+					gets(fechafin);
+
+				}while(!fechacorrecta(fechaini));
+				ReporteInversionesPorProyecto("proyecto.dat",fechaini,fechafin);
+				break;
+			}
+		case 6:
+			{ 
+				do
+				{ 
+					cout<<endl<<"ingresar fecha inicial:";
+					gets(fechaini);
+				}while(!fechacorrecta(fechaini));
+				do{
+					cout<<endl<<"ingresar fecha final";
+					gets(fechafin);
+				}while(!fechacorrecta(fechafin));
+				ReporteEgresosPorProyecto("proyecto.dat",fechaini,fechafin);
+				break;
+			}
+		case 7:
+			{ 
+				ReporteGananciaInversionistas("inversionista.dat");
+				break;
+			}
+		case 8: do
+				{ 
+					cout<<endl<<"ingresar fecha inicial:";
+					gets(fechaini);
+				}while(!fechacorrecta(fechaini));
+				do{
+					cout<<endl<<"ingresar fecha final";
+					gets(fechafin);
+				}while(!fechacorrecta(fechafin)); 
+			ReporteIMPUESTOS("proyecto.dat",fechaini, fechafin);
+			break;
+		}
+		cin.clear();
+		cin.ignore();
+	}while(op!=0);
+	return 0;
+}
